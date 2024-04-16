@@ -4,18 +4,36 @@ import cv2
 
 import cv2
 
+import mediapipe as mp
+
 def get_face_bounding_box(image_path):
-    # Load the image
+    # Initialize MediaPipe Face Detection.
+    mp_face_detection = mp.solutions.face_detection
+    mp_drawing = mp.solutions.drawing_utils
+
+    # Read the image with OpenCV.
     image = cv2.imread(image_path)
-    # Convert the image to grayscale (improves face detection performance)
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    # Load OpenCV's pre-trained Haar cascade for face detection
-    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-    # Detect faces in the image
-    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
-    # Return the coordinates of the first detected face (x, y, width, height)
-    if len(faces) > 0:
-        return faces[0]  # Returns the first face detected
+    # Convert the image from BGR to RGB (MediaPipe requirement).
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    # Initialize face detection with a minimum confidence threshold.
+    with mp_face_detection.FaceDetection(min_detection_confidence=0.5) as face_detection:
+        # Process the image to detect faces.
+        results = face_detection.process(image_rgb)
+        
+        if results.detections:
+            for detection in results.detections:
+                # Get the bounding box coordinates from the first detected face.
+                bboxC = detection.location_data.relative_bounding_box
+                img_height, img_width, _ = image.shape
+                x_min = int(bboxC.xmin * img_width)
+                y_min = int(bboxC.ymin * img_height) - 30
+                box_width = int(bboxC.width * img_width)
+                box_height = int(bboxC.height * img_height) + 30
+                
+                return (x_min, y_min, box_width, box_height)
+
+    # Return None if no face is detected
     return None
 
 def replace_faces(set1, set2):
@@ -24,6 +42,7 @@ def replace_faces(set1, set2):
     for img1_path, img2_path in zip(set1, set2):
         face_box1 = get_face_bounding_box(img1_path)
         face_box2 = get_face_bounding_box(img2_path)
+        print (img2_path, img1_path)
         
         if face_box1 is not None and len(face_box1) > 0 and face_box2 is not None and len(face_box2) > 0:            # Load images with PIL for easier manipulation
             img1 = Image.open(img1_path)
@@ -58,9 +77,10 @@ def get_image_files(directory):
 
 
 # Get image file sets
-set2 = get_image_files('/Users/yewongim/Projects/clothing_change/output')
-set1 = get_image_files('/Users/yewongim/Projects/clothing_change/input/square_target_frames')
-
+set2 = get_image_files('./output/tps_frames')
+set1 = get_image_files('./input/square_target_frames')
+set2 = sorted(set2)
+set1 = sorted(set1)
 #print("Set 1 images:", set1)
 #print("Set 2 images:", set2)
 
@@ -69,6 +89,4 @@ set1 = get_image_files('/Users/yewongim/Projects/clothing_change/input/square_ta
 # Get the combined images
 combined_images = replace_faces(set1, set2)
 
-# Optionally, save or show the combined images
-for index, image in enumerate(combined_images):
-    image.save(f'./final/combined_image_{index:04}.jpg')
+

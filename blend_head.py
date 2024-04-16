@@ -10,9 +10,6 @@ import torch
 
 def _get_content_pose_landmarks(input_frames=None):
     boxes = []  # bounding boxes of human face
-    lip_dists = []  # lip dists
-    lip_index = [0, 17]
-    # we define the lip dist(openness): distance between the  midpoints of the upper lip and lower lip
     all_pose_landmarks, all_content_landmarks = [], []  # content landmarks include lip and jaw landmarks
 
     _fm = mp.solutions.face_mesh.FaceMesh(static_image_mode=False, max_num_faces=1, refine_landmarks=True,
@@ -25,19 +22,10 @@ def _get_content_pose_landmarks(input_frames=None):
         if not results.multi_face_landmarks:
             _msg = 'E001: Face Detection failed at frame %05d. Falling back to initial estimate' % frame_idx
             logging.info(_msg)
-            # Use previous detections
-            _prev = lip_dists[-1]
-            lip_dists.append(_prev)
-            _prev = boxes[-1]
-            boxes.append(_prev)
+
         else:
             face_landmarks = results.multi_face_landmarks[0]
-            ## calculate the lip dist
-            dx = face_landmarks.landmark[lip_index[0]].x - face_landmarks.landmark[lip_index[1]].x
-            dy = face_landmarks.landmark[lip_index[0]].y - face_landmarks.landmark[lip_index[1]].y
-            dist = np.linalg.norm((dx, dy))
-            lip_dists.append((frame_idx, dist))
-
+    
             # (1)get the marginal landmarks to crop face
             x_min, x_max, y_min, y_max = 999, -999, 999, -999
             for idx, landmark in enumerate(face_landmarks.landmark):
@@ -60,6 +48,7 @@ def _get_content_pose_landmarks(input_frames=None):
             y_max = min(y_max + plus_pixel / h, 1)
             y1, y2, x1, x2 = int(y_min * h), int(y_max * h), int(x_min * w), int(x_max * w)
             boxes.append([y1, y2, x1, x2])
+            
     boxes = np.array(boxes)
 
     face_crop_results = [[image[y1:y2, x1:x2], (y1, y2, x1, x2)] \
@@ -96,7 +85,7 @@ def _get_content_pose_landmarks(input_frames=None):
 
     return all_pose_landmarks, all_content_landmarks, face_crop_results, lip_dists
     
-def _prepare_batch_input(self, _b_st=None, _mc=None, _ifs=None, _fcr=None, _apl=None, _acl=None, _obf=None,
+def _prepare_batch_input(_b_st=None, _mc=None, _ifs=None, _fcr=None, _apl=None, _acl=None, _obf=None,
                             _nlp=None, _nlc=None):
     _tif, _tofc = [], []
     
