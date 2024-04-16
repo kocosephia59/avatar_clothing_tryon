@@ -30,9 +30,9 @@ conda activate tryon_clothing
 
 Rough Flow is 
 
-preprocess using preprocess.py
-create target image using diffusion_inpainting.py
-run tps_warp_new.py
+* preprocess using preprocess.py
+* create target image using diffusion_inpainting.py
+* run tps_warp_new.py
 
 Still need to write blend in the original head 
 
