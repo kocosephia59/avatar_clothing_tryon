@@ -37,9 +37,9 @@ run tps_warp_new.py
 Still need to write blend in the original head 
 
 compline the images back to a video using 
-'''bash
+```bash
  ffmpeg -framerate 25 -i tps_warp_frame_%04d.png -c:v libx264 -r 25 -pix_fmt yuv420p output_video.mp4
- '''
+ ```
 
 
 
